@@ -9,7 +9,7 @@
 #define CONNECTION_PACKET 0
 #define MESSAGE_PACKET 1
 #define USER_ALREADY_TAKEN 2
-#define PORT "8082"
+#define PORT "8081"
 
 typedef struct {
   int socket;
@@ -50,14 +50,6 @@ void *handle_client_connection(void *args) {
   return NULL;
 }
 
-void register_client(int socket, char *name) {
-  Client *c = malloc(sizeof(Client));
-  c->name = strdup(name);
-  c->socket = socket;
-  pthread_create(&c->thread, NULL, &handle_client_connection, c);
-  list_add(clients, c);
-}
-
 void notify_connection(char *client) {
   t_list_iterator *iterator = list_iterator_create(clients);
   while (list_iterator_has_next(iterator)) {
@@ -72,6 +64,16 @@ void notify_connection(char *client) {
     packet_destroy(connected);
   }
   list_iterator_destroy(iterator);
+}
+
+void register_client(int socket, char *name) {
+  Client *c = malloc(sizeof(Client));
+  c->name = strdup(name);
+  c->socket = socket;
+  pthread_create(&c->thread, NULL, &handle_client_connection, c);
+  list_add(clients, c);
+
+  notify_connection(name);
 }
 
 char *handle_connection_packet(t_packet *packet) {
@@ -106,15 +108,16 @@ int main(void) {
       char *name = handle_connection_packet(packet);
 
       if (is_name_taken(name)) {
+        log_info(logger, "Name %s already taken", name);
         t_packet *packet = packet_create(USER_ALREADY_TAKEN);
         packet_send(packet, client);
         packet_destroy(packet);
+        connection_close(client);
         continue;
       };
 
       log_info(logger, "%s connected", name);
       register_client(client, name);
-      notify_connection(name);
     }
   }
 

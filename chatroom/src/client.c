@@ -7,10 +7,10 @@
 #define CONNECTION_PACKET 0
 #define MESSAGE_PACKET 1
 #define USER_ALREADY_TAKEN 2
-#define PORT "8082"
+#define PORT "8081"
 
-int client;
-char *name = NULL;
+int client = -1;
+char name[64] = {0};
 
 void handle_connection_packet(t_packet *packet) {
   char *other = packet_read_string(packet);
@@ -59,24 +59,30 @@ void *handle_input(void *args) {
 };
 
 void login() {
+  if (client != -1)
+    connection_close(client);
+  client = connection_create_client("localhost", PORT);
   printf("Enter name to login:\n");
-  size_t size;
-  getline(&name, &size, stdin);
+  if (fgets(name, sizeof(name), stdin)) {
+    size_t len = strlen(name);
+    if (len > 0 && name[len - 1] == '\n') {
+      name[len - 1] = '\0';
+    }
+  }
   send_connection_packet();
 }
 
 int main(void) {
-  client = connection_create_client("localhost", PORT);
-
   login();
 
-  // pthread_t input;
-  // pthread_create(&input, NULL, &handle_input, NULL);
+  pthread_t input;
+  pthread_create(&input, NULL, &handle_input, NULL);
 
   while (1) {
     t_packet *packet = packet_recieve(client);
     switch (packet->type) {
     case USER_ALREADY_TAKEN:
+      printf("Username already taken\n");
       login();
       break;
 
