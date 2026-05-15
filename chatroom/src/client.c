@@ -40,24 +40,7 @@ void send_message_packet(char *message) {
   packet_destroy(packet);
 }
 
-void *handle_input(void *args) {
-  // sleep(4);
-  // t_packet *packet = packet_create(MESSAGE_PACKET);
-  // packet_add_string(packet, "Some message");
-  // packet_send(packet, client);
-  // packet_destroy(packet);
-  // sleep(4);
-  // packet = packet_create(MESSAGE_PACKET);
-  // packet_add_string(packet, "Some other message");
-  // packet_send(packet, client);
-  // packet_destroy(packet);
-  // sleep(4);
-  // packet = packet_create(MESSAGE_PACKET);
-  // packet_add_string(packet, "Another message");
-  // packet_send(packet, client);
-  // packet_destroy(packet);
-  return NULL;
-};
+void *handle_input(void *args) { return NULL; };
 
 void login() {
   if (client != -1)
