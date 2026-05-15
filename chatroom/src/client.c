@@ -4,17 +4,25 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define CONNECTION_PACKET 0
-#define MESSAGE_PACKET 1
-#define USER_ALREADY_TAKEN 2
+#define LOGIN 0
+#define CONNECTED 1
+#define DISCONNECTED 2
+#define USER_ALREADY_TAKEN 3
+#define MESSAGE_PACKET 4
 #define PORT "8081"
 
 int client = -1;
 char name[64] = {0};
 
+void handle_disconnect_packet(t_packet *packet) {
+  char *other = packet_read_string(packet);
+  printf("%s left the room\n", other);
+  fflush(stdout);
+}
+
 void handle_connection_packet(t_packet *packet) {
   char *other = packet_read_string(packet);
-  printf("%s connected!\n", other);
+  printf("%s joined the room\n", other);
   fflush(stdout);
 }
 
@@ -23,13 +31,6 @@ void handle_message_packet(t_packet *packet) {
   char *message = packet_read_string(packet);
   printf("[%s]: %s\n", other, message);
   fflush(stdout);
-}
-
-void send_connection_packet() {
-  t_packet *packet = packet_create(CONNECTION_PACKET);
-  packet_add_string(packet, name);
-  packet_send(packet, client);
-  packet_destroy(packet);
 }
 
 void send_message_packet(char *message) {
@@ -69,7 +70,10 @@ void login() {
       name[len - 1] = '\0';
     }
   }
-  send_connection_packet();
+  t_packet *packet = packet_create(LOGIN);
+  packet_add_string(packet, name);
+  packet_send(packet, client);
+  packet_destroy(packet);
 }
 
 int main(void) {
@@ -86,8 +90,12 @@ int main(void) {
       login();
       break;
 
-    case CONNECTION_PACKET:
+    case CONNECTED:
       handle_connection_packet(packet);
+      break;
+
+    case DISCONNECTED:
+      handle_disconnect_packet(packet);
       break;
 
     case MESSAGE_PACKET:
@@ -100,7 +108,7 @@ int main(void) {
     packet_destroy(packet);
   }
 
-  // pthread_join(input, NULL);
+  pthread_join(input, NULL);
   connection_close(client);
   return 0;
 }
