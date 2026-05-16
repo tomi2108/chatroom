@@ -14,45 +14,58 @@
 int client = -1;
 char name[64] = {0};
 
-void handle_disconnect_packet(t_packet *packet) {
+int read_line(char *buffer, size_t size) {
+  if (fgets(buffer, size, stdin) == NULL)
+    return 0;
+  buffer[strcspn(buffer, "\n")] = '\0';
+  return 1;
+}
+
+void handle_disconnected(t_packet *packet) {
   char *other = packet_read_string(packet);
   printf("%s left the room\n", other);
-  fflush(stdout);
 }
 
-void handle_connection_packet(t_packet *packet) {
+void handle_connected(t_packet *packet) {
   char *other = packet_read_string(packet);
   printf("%s joined the room\n", other);
-  fflush(stdout);
 }
 
-void handle_message_packet(t_packet *packet) {
+void handle_message(t_packet *packet) {
   char *other = packet_read_string(packet);
   char *message = packet_read_string(packet);
   printf("[%s]: %s\n", other, message);
-  fflush(stdout);
 }
 
-void send_message_packet(char *message) {
+void send_message(char *message) {
   t_packet *packet = packet_create(MESSAGE_PACKET);
   packet_add_string(packet, message);
   packet_send(packet, client);
   packet_destroy(packet);
 }
 
-void *handle_input(void *args) { return NULL; };
+void *handle_input(void *args) {
+  char message[500];
+
+  while (1) {
+    read_line(message, sizeof(message));
+
+    t_packet *packet = packet_create(MESSAGE_PACKET);
+    packet_add_string(packet, message);
+    packet_send(packet, client);
+    packet_destroy(packet);
+  }
+  return NULL;
+};
 
 void login() {
   if (client != -1)
     connection_close(client);
+
   client = connection_create_client("localhost", PORT);
   printf("Enter name to login:\n");
-  if (fgets(name, sizeof(name), stdin)) {
-    size_t len = strlen(name);
-    if (len > 0 && name[len - 1] == '\n') {
-      name[len - 1] = '\0';
-    }
-  }
+
+  read_line(name, sizeof(name));
   t_packet *packet = packet_create(LOGIN);
   packet_add_string(packet, name);
   packet_send(packet, client);
@@ -68,21 +81,22 @@ int main(void) {
   while (1) {
     t_packet *packet = packet_recieve(client);
     switch (packet->type) {
-    case USER_ALREADY_TAKEN:
+    case USER_ALREADY_TAKEN: {
       printf("Username already taken\n");
       login();
       break;
+    }
 
     case CONNECTED:
-      handle_connection_packet(packet);
+      handle_connected(packet);
       break;
 
     case DISCONNECTED:
-      handle_disconnect_packet(packet);
+      handle_disconnected(packet);
       break;
 
     case MESSAGE_PACKET:
-      handle_message_packet(packet);
+      handle_message(packet);
       break;
 
     default:

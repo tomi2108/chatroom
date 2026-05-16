@@ -47,40 +47,49 @@ void broadcast(char *from, t_packet *packet) {
   list_iterator_destroy(iterator);
 }
 
+void handle_disconnected(Client client) {
+  log_info(logger, "%s disconnected", client.name);
+  connection_close(client.socket);
+
+  int index = get_client_index(client.name);
+  list_remove_and_destroy_element(clients, index, &free);
+
+  t_packet *packet = packet_create(DISCONNECTED);
+  packet_add_string(packet, client.name);
+  broadcast(client.name, packet);
+  packet_destroy(packet);
+}
+
+void handle_message(Client client, char *message) {
+  log_info(logger, "Message recieved from %s", client.name);
+
+  t_packet *packet = packet_create(MESSAGE_PACKET);
+  packet_add_string(packet, client.name);
+  packet_add_string(packet, message);
+  broadcast(client.name, packet);
+  packet_destroy(packet);
+}
+
 void *handle_client_connection(void *args) {
   Client client = *(Client *)args;
   while (1) {
     t_packet *packet = packet_recieve(client.socket);
 
     if (!packet) {
-      log_info(logger, "%s disconnected", client.name);
-      connection_close(client.socket);
-
-      int index = get_client_index(client.name);
-      list_remove_and_destroy_element(clients, index, &free);
-
-      t_packet *packet = packet_create(DISCONNECTED);
-      packet_add_string(packet, client.name);
-      broadcast(client.name, packet);
-      packet_destroy(packet);
+      handle_disconnected(client);
       return NULL;
     }
 
     if (packet->type == MESSAGE_PACKET) {
       char *message = packet_read_string(packet);
-      log_info(logger, "Message recieved from %s", client.name);
-
-      t_packet *packet = packet_create(MESSAGE_PACKET);
-      packet_add_string(packet, client.name);
-      packet_add_string(packet, message);
-      broadcast(client.name, packet);
-      packet_destroy(packet);
+      handle_message(client, message);
     }
   }
   return NULL;
 }
 
 void register_client(int socket, char *name) {
+  log_info(logger, "%s connected", name);
   Client *c = malloc(sizeof(Client));
   c->name = strdup(name);
   c->socket = socket;
@@ -93,10 +102,18 @@ void register_client(int socket, char *name) {
   packet_destroy(packet);
 }
 
-char *handle_connection_packet(t_packet *packet) {
+char *handle_login(t_packet *packet) {
   char *name = packet_read_string(packet);
   packet_destroy(packet);
   return name;
+}
+
+void handle_user_taken(int client, char *name) {
+  log_info(logger, "Name %s already taken", name);
+  t_packet *packet = packet_create(USER_ALREADY_TAKEN);
+  packet_send(packet, client);
+  packet_destroy(packet);
+  connection_close(client);
 }
 
 int main(void) {
@@ -111,18 +128,13 @@ int main(void) {
     t_packet *packet = packet_recieve(client);
 
     if (packet->type == LOGIN) {
-      char *name = handle_connection_packet(packet);
+      char *name = handle_login(packet);
 
       if (get_client_index(name) != -1) {
-        log_info(logger, "Name %s already taken", name);
-        t_packet *packet = packet_create(USER_ALREADY_TAKEN);
-        packet_send(packet, client);
-        packet_destroy(packet);
-        connection_close(client);
+        handle_user_taken(client, name);
         continue;
       };
 
-      log_info(logger, "%s connected", name);
       register_client(client, name);
     }
   }
