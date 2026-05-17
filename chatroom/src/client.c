@@ -63,7 +63,7 @@ void login() {
     connection_close(client);
 
   client = connection_create_client("localhost", PORT);
-  printf("Enter name to login:\n");
+  printf("Enter name to login: ");
 
   read_line(name, sizeof(name));
   t_packet *packet = packet_create(LOGIN);
@@ -81,11 +81,11 @@ int main(void) {
   while (1) {
     t_packet *packet = packet_recieve(client);
     switch (packet->type) {
+
     case USER_ALREADY_TAKEN: {
       printf("Username already taken\n");
       login();
-      break;
-    }
+    } break;
 
     case CONNECTED:
       handle_connected(packet);
@@ -97,9 +97,6 @@ int main(void) {
 
     case MESSAGE_PACKET:
       handle_message(packet);
-      break;
-
-    default:
       break;
     }
     packet_destroy(packet);
