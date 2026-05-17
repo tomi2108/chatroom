@@ -32,7 +32,7 @@ BINS := $(CLIENT_BIN) $(SERVER_BIN)
 all: debug
 
 .PHONY: debug
-debug: CFLAGS = $(CDEBUG)
+debug: CFLAGS = -Wall -Wextra $(CDEBUG)
 debug: $(BINS)
 
 .PHONY: release

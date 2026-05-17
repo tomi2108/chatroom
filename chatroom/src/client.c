@@ -22,18 +22,18 @@ int read_line(char *buffer, size_t size) {
 }
 
 void handle_disconnected(t_packet *packet) {
-  char *other = packet_read_string(packet);
+  const char *other = packet_read_string(packet);
   printf("%s left the room\n", other);
 }
 
 void handle_connected(t_packet *packet) {
-  char *other = packet_read_string(packet);
+  const char *other = packet_read_string(packet);
   printf("%s joined the room\n", other);
 }
 
 void handle_message(t_packet *packet) {
-  char *other = packet_read_string(packet);
-  char *message = packet_read_string(packet);
+  const char *other = packet_read_string(packet);
+  const char *message = packet_read_string(packet);
   printf("[%s]: %s\n", other, message);
 }
 
@@ -45,6 +45,8 @@ void send_message(char *message) {
 }
 
 void *handle_input(void *args) {
+  (void)args;
+
   char message[500];
 
   while (1) {

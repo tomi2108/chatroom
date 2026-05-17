@@ -23,10 +23,10 @@ t_log *logger;
 int server;
 t_list *clients = NULL;
 
-int get_client_index(char *name) {
+int get_client_index(const char *name) {
   t_list_iterator *iterator = list_iterator_create(clients);
   while (list_iterator_has_next(iterator)) {
-    Client *next = list_iterator_next(iterator);
+    const Client *next = list_iterator_next(iterator);
     if (strcmp(next->name, name) == 0) {
       list_iterator_destroy(iterator);
       return list_iterator_index(iterator);
@@ -36,7 +36,7 @@ int get_client_index(char *name) {
   return -1;
 }
 
-void broadcast(char *from, t_packet *packet) {
+void broadcast(const char *from, t_packet *packet) {
   t_list_iterator *iterator = list_iterator_create(clients);
   while (list_iterator_has_next(iterator)) {
     Client *next = list_iterator_next(iterator);
@@ -96,10 +96,10 @@ void handle_connected(Client client) {
 
 void *handle_client_connection(void *args) {
   Client client = *(Client *)args;
-  t_packet *packet = packet_recieve(client.socket);
+  t_packet *login_packet = packet_recieve(client.socket);
 
-  if (packet->type == LOGIN) {
-    client.name = handle_login(packet);
+  if (login_packet->type == LOGIN) {
+    client.name = handle_login(login_packet);
     if (get_client_index(client.name) != -1) {
       handle_user_taken(client);
       return NULL;
@@ -129,6 +129,8 @@ void *handle_client_connection(void *args) {
 
 void register_client(int socket) {
   Client *c = malloc(sizeof(Client));
+  if (!c)
+    return;
   c->socket = socket;
   pthread_create(&c->thread, NULL, &handle_client_connection, c);
 }
