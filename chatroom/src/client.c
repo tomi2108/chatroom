@@ -4,12 +4,15 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define LOGIN 0
-#define CONNECTED 1
-#define DISCONNECTED 2
-#define USER_ALREADY_TAKEN 3
-#define MESSAGE_PACKET 4
 #define PORT "8081"
+
+typedef enum {
+  LOGIN,
+  CONNECTED,
+  DISCONNECTED,
+  USER_ALREADY_TAKEN,
+  MESSAGE_PACKET,
+} Packet_type;
 
 int client = -1;
 char name[64] = {0};
@@ -51,11 +54,7 @@ void *handle_input(void *args) {
 
   while (1) {
     read_line(message, sizeof(message));
-
-    t_packet *packet = packet_create(MESSAGE_PACKET);
-    packet_add_string(packet, message);
-    packet_send(packet, client);
-    packet_destroy(packet);
+    send_message(message);
   }
   return NULL;
 };

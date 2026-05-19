@@ -6,12 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LOGIN 0
-#define CONNECTED 1
-#define DISCONNECTED 2
-#define USER_ALREADY_TAKEN 3
-#define MESSAGE_PACKET 4
 #define PORT "8081"
+
+typedef enum {
+  LOGIN,
+  CONNECTED,
+  DISCONNECTED,
+  USER_ALREADY_TAKEN,
+  MESSAGE_PACKET,
+} Packet_type;
 
 typedef struct {
   int socket;
