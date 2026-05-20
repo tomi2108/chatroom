@@ -139,14 +139,14 @@ void prompt_rooms() {
   int count = people_in_room->elements_count;
 
   printf("--------------- ROOM %u ---------------\n", room);
-  if (count > 0)
+  if (count > 0) {
     printf("People in room: ");
-
-  for (u_int32_t i = 0; i < count; i++) {
-    const char *other = list_get(people_in_room, i);
-    printf("%s, ", other);
+    for (u_int32_t i = 0; i < count; i++) {
+      const char *other = list_get(people_in_room, i);
+      printf("%s, ", other);
+    }
+    printf("\n");
   }
-
   list_destroy(people_in_room);
 };
 

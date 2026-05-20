@@ -97,7 +97,7 @@ void handle_join(Client *client, u_int32_t room) {
   int count = clients_in_same_room->elements_count;
   packet_add_uint32(res, count);
   for (int i = 0; i < count; i++) {
-    const Client *next = list_get(clients, i);
+    const Client *next = list_get(clients_in_same_room, i);
     packet_add_string(res, next->name);
   }
 
